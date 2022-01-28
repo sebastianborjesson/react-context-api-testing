@@ -18,7 +18,7 @@ const createUser = async (username) => {
     try {
         const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: createHeaders,
+            headers: createHeaders(),
             body: JSON.stringify({
                 username,
                 orders: []

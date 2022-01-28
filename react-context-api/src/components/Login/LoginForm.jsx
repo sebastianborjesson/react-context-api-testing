@@ -1,5 +1,9 @@
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { loginUser } from '../../api/user'
+import { storageSave } from '../../utils/storage'
+import { useNavigate } from 'react-router-dom'
+import { useUser } from '../../context/UserContext'
 
 const userNameConfig = {
     required: true,
@@ -7,20 +11,38 @@ const userNameConfig = {
 }
 
 const LoginForm = () => {
-    const {
-        register,
-        handleSubmit,
-        formState: { errors }
-    } = useForm()
+    // Hooks
+    const { register, handleSubmit, formState: { errors } } = useForm()
+    const { user, setUser } = useUser()
+    const navigate = useNavigate()
+
+    // Local States
+    const [ loading, setLoading ] = useState(false)
+    const [ apiError, setApiError ] = useState(null)
+
+    // Side Effects
+    useEffect(() => {
+        if(user !== null) {
+            navigate('/profile')
+        }
+    }, [user, navigate]) // Empty deps - Only run once
+
+    // Event Handlers
 
     const onSubmit = async ({ username }) => {
-        const [error, user] = await loginUser(username)
-        console.log(error)
-        console.log(user)
-     }
-    
-    //console.log(errors);
+        setLoading(true)
+        const [error, userResponse] = await loginUser(username)
+        if(error !== null) {
+            setApiError(error)
+        }
+        if(userResponse !== null) {
+            storageSave('coffee-user', userResponse)
+            setUser(userResponse)
+        }
+        setLoading(false)
+    }
 
+    // Render Functions
     const errorMessage = (() => {
         if(!errors.username) {
             return null
@@ -48,8 +70,10 @@ const LoginForm = () => {
                     />
                     { errorMessage }
                 </fieldset>
-                <button type="submit">Continue</button>
-
+                <button type="submit" disabled={loading}>Continue</button>
+                
+                { loading && <p>Logging in...</p>}
+                { apiError && <p>{ apiError }</p>}
             </form>
         </>
     )
